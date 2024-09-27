@@ -1,5 +1,6 @@
 output/*
-datasets/*
+datasets/GaitData
+datasets/GaitDatasetB-silh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

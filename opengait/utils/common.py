@@ -196,6 +196,8 @@ def get_ddp_module(module, find_unused_parameters=False, **kwargs):
         # for the case that loss module has not parameters.
         return module
     device = torch.cuda.current_device()
+    import pdb
+    pdb.set_trace()
     module = DDPPassthrough(module, device_ids=[device], output_device=device,
                             find_unused_parameters=find_unused_parameters, **kwargs)
     return module
