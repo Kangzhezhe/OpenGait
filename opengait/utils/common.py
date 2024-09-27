@@ -191,6 +191,7 @@ class DDPPassthrough(DDP):
 
 
 def get_ddp_module(module, find_unused_parameters=False, **kwargs):
+    
     if len(list(module.parameters())) == 0:
         # for the case that loss module has not parameters.
         return module

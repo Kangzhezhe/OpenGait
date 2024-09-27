@@ -17,7 +17,7 @@ parser.add_argument('--local-rank', type=int, default=0,
 parser.add_argument('--cfgs', type=str,
                     default='config/default.yaml', help="path of config file")
 parser.add_argument('--phase', default='train',
-                    choices=['train', 'test'], help="choose train or test phase")
+                    choices=['train', 'test', 'inference'], help="choose train or test phase")
 parser.add_argument('--log_to_file', action='store_true',
                     help="log to file, default path is: output/<dataset>/<model>/<save_name>/<logs>/<Datetime>.txt")
 parser.add_argument('--iter', default=0, help="iter to restore")
@@ -41,7 +41,7 @@ def initialization(cfgs, training):
     init_seeds(seed)
 
 
-def run_model(cfgs, training):
+def run_model(cfgs, training,inference):
     msg_mgr = get_msg_mgr()
     model_cfg = cfgs['model_cfg']
     msg_mgr.log_info(model_cfg)
@@ -57,6 +57,8 @@ def run_model(cfgs, training):
 
     if training:
         Model.run_train(model)
+    elif inference:
+        Model.run_inference(model)
     else:
         Model.run_test(model)
 
@@ -73,5 +75,6 @@ if __name__ == '__main__':
         cfgs['trainer_cfg']['restore_hint'] = int(opt.iter)
 
     training = (opt.phase == 'train')
+    inference = (opt.phase == 'inference')
     initialization(cfgs, training)
-    run_model(cfgs, training)
+    run_model(cfgs, training,inference)

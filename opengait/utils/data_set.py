@@ -6,6 +6,66 @@ import cv2
 import xarray as xr
 from tqdm import tqdm
 import pickle
+import random
+import math
+
+
+my_sample_type = 'all'
+my_frame_num = 30
+def my_collate_fn(batch):
+    batch_size = len(batch)
+    feature_num = len(batch[0][0])
+    seqs = [batch[i][0] for i in range(batch_size)]
+    frame_sets = [batch[i][1] for i in range(batch_size)]
+    view = [batch[i][2] for i in range(batch_size)]
+    seq_type = [batch[i][3] for i in range(batch_size)]
+    label = [batch[i][4] for i in range(batch_size)]
+    batch = [seqs, view, seq_type, label, None]
+
+    def select_frame(index):
+        sample = seqs[index]
+        frame_set = frame_sets[index]
+        if my_sample_type == 'random':
+            frame_id_list = random.choices(frame_set, k=my_frame_num)
+            _ = [feature.loc[frame_id_list].values for feature in sample]
+        else:
+            _ = [feature.values for feature in sample]
+        return _
+
+    seqs = list(map(select_frame, range(len(seqs))))
+
+    if my_sample_type == 'random':
+        seqs = [np.asarray([seqs[i][j] for i in range(batch_size)]) for j in range(feature_num)]
+    else:
+        gpu_num = 1
+        batch_per_gpu = math.ceil(batch_size / gpu_num)
+        batch_frames = [[
+                            len(frame_sets[i])
+                            for i in range(batch_per_gpu * _, batch_per_gpu * (_ + 1))
+                            if i < batch_size
+                            ] for _ in range(gpu_num)]
+        if len(batch_frames[-1]) != batch_per_gpu:
+            for _ in range(batch_per_gpu - len(batch_frames[-1])):
+                batch_frames[-1].append(0)
+        max_sum_frame = np.max([np.sum(batch_frames[_]) for _ in range(gpu_num)])
+        seqs = [[
+                    np.concatenate([
+                                        seqs[i][j]
+                                        for i in range(batch_per_gpu * _, batch_per_gpu * (_ + 1))
+                                        if i < batch_size
+                                        ], 0) for _ in range(gpu_num)]
+                for j in range(feature_num)]
+        seqs = [np.asarray([
+                                np.pad(seqs[j][_],
+                                        ((0, max_sum_frame - seqs[j][_].shape[0]), (0, 0), (0, 0)),
+                                        'constant',
+                                        constant_values=0)
+                                for _ in range(gpu_num)])
+                for j in range(feature_num)]
+        batch[4] = np.asarray(batch_frames)
+
+    batch[0] = seqs
+    return batch
 
 class DataSet(tordata.Dataset):
     def __init__(self, seq_dir, label, seq_type, view, cache, resolution):

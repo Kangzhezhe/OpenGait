@@ -6,6 +6,7 @@ from .data_set import DataSet, DataSet2
 
 def load_data(dataset_path, resolution, dataset, cache=True):
     
+
     if cache==True:
         dataset_path = osp.join(dataset_path, 'train')
     else:

@@ -3,7 +3,15 @@ import torch.nn.functional as F
 import numpy as np
 import os.path as osp
 import os
-from common import print_log
+
+from time import strftime, localtime
+
+def print_log(message):
+    print('[{0}] [INFO]: {1}'.format(strftime('%Y-%m-%d %H:%M:%S', localtime()), message))
+
+def is_list_or_tuple(x):
+    return isinstance(x, (list, tuple))
+
 def cuda_dist(x, y, metric='euc'):
     x = torch.from_numpy(x)
     y = torch.from_numpy(y)

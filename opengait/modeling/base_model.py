@@ -15,6 +15,7 @@ import os.path as osp
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as tordata
+import os
 
 from tqdm import tqdm
 from torch.cuda.amp import autocast
@@ -33,6 +34,10 @@ from utils import get_valid_args, is_list, is_dict, np2var, ts2np, list2var, get
 from evaluation import evaluator as eval_functions
 from utils import NoOp
 from utils import get_msg_mgr
+
+from utils import load_data
+from utils.data_set import my_collate_fn
+from utils.evaluator import evaluation
 
 __all__ = ['BaseModel']
 
@@ -403,6 +408,7 @@ class BaseModel(MetaModel, nn.Module):
     def run_train(model):
         """Accept the instance object(model) here, and then run the train loop."""
         for inputs in tqdm(model.train_loader, total= model.engine_cfg['total_iter']-model.iteration):
+            import ipdb; ipdb.set_trace()
             ipts = model.inputs_pretreament(inputs)
             with autocast(enabled=model.engine_cfg['enable_float16']):
                 retval = model(ipts)
@@ -466,3 +472,37 @@ class BaseModel(MetaModel, nn.Module):
             except:
                 dataset_name = model.cfgs['data_cfg']['dataset_name']
             return eval_func(info_dict, dataset_name, **valid_args)
+
+    @staticmethod
+    def run_inference(model):
+        model.eval()
+        data_source = load_data(os.path.dirname(model.cfgs['data_cfg']['dataset_root']) 
+                                ,64, model.cfgs['data_cfg']['dataset_name'], cache=False)
+        data_loader = tordata.DataLoader(
+            dataset=data_source,
+            batch_size=1,
+            sampler=tordata.sampler.SequentialSampler(data_source),
+            collate_fn=my_collate_fn,
+            num_workers=model.cfgs['data_cfg']['num_workers'])
+
+        feature_list = list()
+        views_list = list()
+        types_list = list()
+        label_list = list()
+
+        for x in tqdm(data_loader):
+            seq, view, seq_type, label, batch_frame = x
+            x = (seq, np.array([0]), seq_type, view, batch_frame)
+
+            ipts = model.inputs_pretreament(x)
+
+            retval = model(ipts)
+            embs = retval['inference_feat']['embeddings']
+            
+            feature_list.append(embs.data.cpu().numpy())
+            views_list += view
+            types_list += seq_type
+            label_list += label
+        data = (np.concatenate(feature_list, 0), views_list, types_list, label_list)
+        evaluation(data, 'CASIA-B', 'euc')
+        
