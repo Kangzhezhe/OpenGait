@@ -1,14 +1,14 @@
 data_cfg:
   dataset_name: CASIA-B
-  dataset_root: your_path
+  dataset_root: datasets/GaitData/train
   dataset_partition: ./datasets/CASIA-B/CASIA-B.json
-  num_workers: 1
+  num_workers: 8
   remove_no_gallery: false # Remove probe if no gallery for it
   test_dataset_name: CASIA-B
 
 evaluator_cfg:
   enable_float16: true
-  restore_ckpt_strict: true
+  restore_ckpt_strict: false
   restore_hint: 60000
   save_name: GaitBase_DA
   sampler:
@@ -57,7 +57,7 @@ model_cfg:
     out_channels: 256
     parts_num: 16
   SeparateBNNecks:
-    class_num: 74
+    class_num: 100
     in_channels: 256
     parts_num: 16
   bin_num:
@@ -81,17 +81,19 @@ trainer_cfg:
   fix_BN: false
   with_test: false
   log_iter: 100
-  restore_ckpt_strict: true
+  restore_ckpt_strict: false
   restore_hint: 0
-  save_iter: 60000
+  save_iter: 5000
   save_name: GaitBase_DA
   sync_BN: true
   total_iter: 60000
   sampler:
     batch_shuffle: true
     batch_size:
+      # - 4
+      # - 4
       - 8 # TripletSampler, batch_size[0] indicates Number of Identity
-      - 16 #                 batch_size[1] indicates Samples sequqnce for each Identity
+      - 18 #                 batch_size[1] indicates Samples sequqnce for each Identity
     frames_num_fixed: 30 # fixed frames number for training
     frames_num_max: 40 # max frames number for unfixed training
     frames_num_min: 20 # min frames number for unfixed traing

@@ -263,6 +263,12 @@ class BaseModel(MetaModel, nn.Module):
             self.msg_mgr.log_info(sorted(set(model_state_dict.keys()).intersection(
                 set(self.state_dict().keys()))))
 
+            # new_pretrained_dict = {k: v for k, v in model_state_dict.items() if (k in self.state_dict().keys())}
+            # matched_dict = {k: v for k, v in new_pretrained_dict.items() if v.shape == self.state_dict()[k].shape}
+            # unmatched_dict = {k: v for k, v in new_pretrained_dict.items() if v.shape != self.state_dict()[k].shape}
+            # print('skip unmatched_dict: '+str(unmatched_dict.keys()))
+            # model_state_dict = matched_dict
+
         self.load_state_dict(model_state_dict, strict=load_ckpt_strict)
         if self.training:
             if not self.engine_cfg["optimizer_reset"] and 'optimizer' in checkpoint:
@@ -408,7 +414,6 @@ class BaseModel(MetaModel, nn.Module):
     def run_train(model):
         """Accept the instance object(model) here, and then run the train loop."""
         for inputs in tqdm(model.train_loader, total= model.engine_cfg['total_iter']-model.iteration):
-            import ipdb; ipdb.set_trace()
             ipts = model.inputs_pretreament(inputs)
             with autocast(enabled=model.engine_cfg['enable_float16']):
                 retval = model(ipts)
