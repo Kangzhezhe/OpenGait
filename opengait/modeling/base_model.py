@@ -413,7 +413,8 @@ class BaseModel(MetaModel, nn.Module):
     @ staticmethod
     def run_train(model):
         """Accept the instance object(model) here, and then run the train loop."""
-        for inputs in tqdm(model.train_loader, total= model.engine_cfg['total_iter']-model.iteration):
+        # for inputs in tqdm(model.train_loader, total= model.engine_cfg['total_iter']-model.iteration):
+        for inputs in model.train_loader:
             ipts = model.inputs_pretreament(inputs)
             with autocast(enabled=model.engine_cfg['enable_float16']):
                 retval = model(ipts)
